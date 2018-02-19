@@ -11,7 +11,7 @@ import net.corda.core.utilities.NetworkHostAndPort
 import net.corda.nodeapi.ArtemisTcpTransport.Companion.tcpTransport
 import net.corda.nodeapi.ConnectionDirection
 import net.corda.nodeapi.internal.config.SSLConfiguration
-import net.corda.nodeapi.internal.serialization.KRYO_RPC_CLIENT_CONTEXT
+import net.corda.nodeapi.internal.serialization.AMQP_RPC_CLIENT_CONTEXT
 import java.time.Duration
 
 /**
@@ -104,7 +104,9 @@ class CordaRPCClient private constructor(
         classLoader: ClassLoader? = null
 ) {
     @JvmOverloads
-    constructor(hostAndPort: NetworkHostAndPort, configuration: CordaRPCClientConfiguration = CordaRPCClientConfiguration.default()) : this(hostAndPort, configuration, null)
+    constructor(hostAndPort: NetworkHostAndPort,
+                configuration: CordaRPCClientConfiguration = CordaRPCClientConfiguration.default())
+            : this(hostAndPort, configuration, null)
 
     companion object {
         internal fun createWithSsl(
@@ -140,7 +142,7 @@ class CordaRPCClient private constructor(
     private val rpcClient = RPCClient<CordaRPCOps>(
             tcpTransport(ConnectionDirection.Outbound(), hostAndPort, config = sslConfiguration),
             configuration,
-            if (classLoader != null) KRYO_RPC_CLIENT_CONTEXT.withClassLoader(classLoader) else KRYO_RPC_CLIENT_CONTEXT
+            AMQP_RPC_CLIENT_CONTEXT
     )
 
     /**
