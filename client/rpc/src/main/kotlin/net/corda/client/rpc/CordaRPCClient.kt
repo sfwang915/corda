@@ -62,6 +62,9 @@ interface CordaRPCClientConfiguration {
     val deduplicationCacheExpiry: Duration get() = default().deduplicationCacheExpiry
 
     companion object {
+        /**
+         * @return eturns the default configuration we recommend you use.
+         */
         fun default(): CordaRPCClientConfiguration = CordaRPCClientConfigurationImpl.default
     }
 }
