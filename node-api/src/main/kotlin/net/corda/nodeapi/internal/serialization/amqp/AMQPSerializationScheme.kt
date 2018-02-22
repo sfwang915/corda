@@ -143,37 +143,4 @@ abstract class AbstractAMQPSerializationScheme(
     protected fun canDeserializeVersion(magic: CordaSerializationMagic) = magic == amqpMagic
 }
 
-// TODO: This will eventually cover server RPC as well and move to node module, but for now this is not implemented
-class AMQPServerSerializationScheme(cordapps: List<Cordapp> = emptyList()) : AbstractAMQPSerializationScheme(cordapps) {
-    override fun rpcClientSerializerFactory(context: SerializationContext): SerializerFactory {
-        throw UnsupportedOperationException()
-    }
-
-    override fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase): Boolean {
-        return canDeserializeVersion(magic) &&
-                (target == SerializationContext.UseCase.P2P || target == SerializationContext.UseCase.Storage)
-    }
-
-}
-
-// TODO: This will eventually cover client RPC as well and move to client module, but for now this is not implemented
-class AMQPClientSerializationScheme(cordapps: List<Cordapp> = emptyList()) : AbstractAMQPSerializationScheme(cordapps) {
-    override fun rpcClientSerializerFactory(context: SerializationContext): SerializerFactory {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory {
-        throw UnsupportedOperationException()
-    }
-
-    override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase): Boolean {
-        return canDeserializeVersion(magic) &&
-                (target == SerializationContext.UseCase.P2P || target == SerializationContext.UseCase.Storage)
-    }
-
-}
 
