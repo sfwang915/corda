@@ -32,10 +32,10 @@ class AMQPClientSerializationScheme (corDapps: List<Cordapp>) : AbstractAMQPSeri
         magic == amqpMagic && target == SerializationContext.UseCase.RPCClient
 
     override fun rpcClientSerializerFactory(context: SerializationContext): SerializerFactory {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return SerializerFactory(context.whitelist, ClassLoader.getSystemClassLoader())
     }
 
     override fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        throw UnsupportedOperationException()
     }
 }

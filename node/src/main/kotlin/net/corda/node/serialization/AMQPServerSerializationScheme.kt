@@ -12,7 +12,7 @@ class AMQPServerSerializationScheme(cordapps: List<Cordapp> = emptyList()) : Abs
     }
 
     override fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return SerializerFactory(context.whitelist, ClassLoader.getSystemClassLoader())
     }
 
     override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase): Boolean {
