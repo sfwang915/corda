@@ -1,6 +1,6 @@
 package net.corda.client.rpc
 
-import net.corda.client.rpc.internal.AMQPClientSerializationScheme
+import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
 import net.corda.client.rpc.internal.RPCClient
 import net.corda.client.rpc.internal.CordaRPCClientConfigurationImpl
 import net.corda.core.context.Actor

@@ -1,7 +1,7 @@
 package net.corda.testing.node.internal
 
 import net.corda.client.mock.Generator
-import net.corda.client.rpc.internal.KryoClientSerializationScheme
+import net.corda.client.rpc.internal.Kryo.KryoClientSerializationScheme
 import net.corda.client.rpc.internal.RPCClient
 import net.corda.client.rpc.internal.CordaRPCClientConfigurationImpl
 import net.corda.core.concurrent.CordaFuture

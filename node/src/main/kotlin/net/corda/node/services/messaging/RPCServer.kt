@@ -28,6 +28,7 @@ import net.corda.core.utilities.*
 import net.corda.node.internal.security.AuthorizingSubject
 import net.corda.node.internal.security.RPCSecurityManager
 import net.corda.node.services.logging.pushToLoggingContext
+import net.corda.node.services.messaging.kryo.RpcServerObservableSerializer
 import net.corda.nodeapi.RPCApi
 import net.corda.nodeapi.externalTrace
 import net.corda.nodeapi.impersonatedActor
@@ -488,54 +489,3 @@ class ObservableSubscription(
 
 typealias ObservableSubscriptionMap = Cache<InvocationId, ObservableSubscription>
 
-object RpcServerObservableSerializer : Serializer<Observable<*>>() {
-    private object RpcObservableContextKey
-
-    private val log = LoggerFactory.getLogger(javaClass)
-    fun createContext(observableContext: RPCServer.ObservableContext): SerializationContext {
-        return RPC_SERVER_CONTEXT.withProperty(RpcServerObservableSerializer.RpcObservableContextKey, observableContext)
-    }
-
-    override fun read(kryo: Kryo?, input: Input?, type: Class<Observable<*>>?): Observable<Any> {
-        throw UnsupportedOperationException()
-    }
-
-    override fun write(kryo: Kryo, output: Output, observable: Observable<*>) {
-        val observableId = InvocationId.newInstance()
-        val observableContext = kryo.context[RpcObservableContextKey] as RPCServer.ObservableContext
-        output.writeInvocationId(observableId)
-        val observableWithSubscription = ObservableSubscription(
-                // We capture [observableContext] in the subscriber. Note that all synchronisation/kryo borrowing
-                // must be done again within the subscriber
-                subscription = observable.materialize().subscribe(
-                        object : Subscriber<Notification<*>>() {
-                            override fun onNext(observation: Notification<*>) {
-                                if (!isUnsubscribed) {
-                                    val message = RPCApi.ServerToClient.Observation(
-                                            id = observableId,
-                                            content = observation,
-                                            deduplicationIdentity = observableContext.deduplicationIdentity
-                                    )
-                                    observableContext.sendMessage(message)
-                                }
-                            }
-
-                            override fun onError(exception: Throwable) {
-                                log.error("onError called in materialize()d RPC Observable", exception)
-                            }
-
-                            override fun onCompleted() {
-                            }
-                        }
-                )
-        )
-        observableContext.clientAddressToObservables.put(observableContext.clientAddress, observableId)
-        observableContext.observableMap.put(observableId, observableWithSubscription)
-    }
-
-    private fun Output.writeInvocationId(id: InvocationId) {
-
-        writeString(id.value)
-        writeLong(id.timestamp.toEpochMilli())
-    }
-}

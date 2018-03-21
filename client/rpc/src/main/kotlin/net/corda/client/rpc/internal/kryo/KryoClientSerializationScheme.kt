@@ -1,6 +1,7 @@
-package net.corda.client.rpc.internal
+package net.corda.client.rpc.internal.kryo
 
 import com.esotericsoftware.kryo.pool.KryoPool
+import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
 import net.corda.core.serialization.SerializationContext
 import net.corda.nodeapi.internal.serialization.CordaSerializationMagic
 import net.corda.core.serialization.internal.SerializationEnvironment

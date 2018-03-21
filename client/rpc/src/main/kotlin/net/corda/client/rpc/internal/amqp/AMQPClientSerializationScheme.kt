@@ -1,4 +1,4 @@
-package net.corda.client.rpc.internal
+package net.corda.client.rpc.internal.amqp
 
 import net.corda.core.cordapp.Cordapp
 import net.corda.core.serialization.SerializationContext
