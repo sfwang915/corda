@@ -99,7 +99,9 @@ abstract class SerializationFactory {
         val currentFactory: SerializationFactory? get() = _currentFactory.get()
     }
 }
+
 typealias SerializationMagic = ByteSequence
+
 @DoNotImplement
 interface SerializationEncoding
 
