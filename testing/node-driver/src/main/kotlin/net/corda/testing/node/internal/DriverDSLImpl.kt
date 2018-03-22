@@ -33,6 +33,7 @@ import net.corda.node.utilities.registration.NetworkRegistrationHelper
 import net.corda.nodeapi.internal.DevIdentityGenerator
 import net.corda.nodeapi.internal.SignedNodeInfo
 import net.corda.nodeapi.internal.addShutdownHook
+import net.corda.nodeapi.internal.config.RevocationCheckConfig
 import net.corda.nodeapi.internal.config.parseAs
 import net.corda.nodeapi.internal.config.toConfig
 import net.corda.nodeapi.internal.crypto.X509KeyStore
@@ -218,7 +219,8 @@ class DriverDSLImpl(
                         "rpcSettings.adminAddress" to rpcAdminAddress.toString(),
                         "useTestClock" to useTestClock,
                         "rpcUsers" to if (users.isEmpty()) defaultRpcUserList else users.map { it.toConfig().root().unwrapped() },
-                        "verifierType" to verifierType.name
+                        "verifierType" to verifierType.name,
+                        "revocationCheckConfig" to RevocationCheckConfig().toConfig().root().unwrapped()
                 ) + czUrlConfig + customOverrides
         ))
         return startNodeInternal(config, webAddress, startInSameProcess, maximumHeapSize, localNetworkMap)
@@ -233,7 +235,8 @@ class DriverDSLImpl(
                         "p2pAddress" to "localhost:1222", // required argument, not really used
                         "compatibilityZoneURL" to compatibilityZoneURL.toString(),
                         "myLegalName" to providedName.toString(),
-                        "devMode" to false)
+                        "devMode" to false,
+                        "revocationCheckConfig" to RevocationCheckConfig().toConfig().root().unwrapped())
         ))
 
         config.corda.certificatesDirectory.createDirectories()
