@@ -2,18 +2,13 @@ package net.corda.testing.internal
 
 import com.nhaarman.mockito_kotlin.doNothing
 import com.nhaarman.mockito_kotlin.whenever
-import net.corda.client.rpc.internal.KryoClientSerializationScheme
 import net.corda.core.DoNotImplement
-import net.corda.client.rpc.internal.AMQPClientSerializationScheme
-import net.corda.client.rpc.internal.Kryo.KryoClientSerializationScheme
 import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
+import net.corda.client.rpc.internal.kryo.KryoClientSerializationScheme
 import net.corda.core.serialization.internal.*
 import net.corda.node.serialization.KryoServerSerializationScheme
 import net.corda.node.serialization.AMQPServerSerializationScheme
 import net.corda.nodeapi.internal.serialization.*
-import net.corda.nodeapi.internal.serialization.amqp.AMQPClientSerializationScheme
-import net.corda.nodeapi.internal.serialization.amqp.AMQPServerSerializationScheme
-import net.corda.testing.core.GlobalSerializationEnvironment
 import net.corda.testing.core.SerializationEnvironmentRule
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
