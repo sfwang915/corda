@@ -131,7 +131,7 @@ abstract class AbstractAMQPSerializationScheme(
                     rpcServerSerializerFactory(context)
                 else -> sff.make(context)
             }.also {
-                registerCustomSerializers(it)
+                registerCustomSerializers(context, it)
             }
         }
     }
