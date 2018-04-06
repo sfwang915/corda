@@ -137,7 +137,7 @@ class CordappLoader private constructor(private val cordappJarPaths: List<Restri
                 FileOutputStream(cordappJAR).use {
                     JarOutputStream(it).use { jos ->
                         val scanDir = File(path.toURI())
-                        scanDir.walkTopDown().forEach {
+                        scanDir.listFiles().filter { it.isFile }.forEach {
                             val entryPath = jarPackageName + "/" + scanDir.toPath().relativize(it.toPath()).toString().replace('\\', '/')
                             val time = FileTime.from(Instant.EPOCH)
                             val entry = ZipEntry(entryPath).setCreationTime(time).setLastAccessTime(time).setLastModifiedTime(time)
