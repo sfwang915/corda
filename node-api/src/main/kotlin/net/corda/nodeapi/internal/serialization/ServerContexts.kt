@@ -30,7 +30,8 @@ val AMQP_STORAGE_CONTEXT = SerializationContextImpl(amqpMagic,
         null,
         AlwaysAcceptEncodingWhitelist)
 
-val AMQP_RPC_SERVER_CONTEXT = SerializationContextImpl(amqpMagic,
+val AMQP_RPC_SERVER_CONTEXT = SerializationContextImpl(
+        amqpMagic,
         SerializationDefaults.javaClass.classLoader,
         GlobalTransientClassWhiteList(BuiltInExceptionsWhitelist()),
         mapOf(ContextPropertyKeys.SERIALIZERS to emptyList<Class<*>>()),

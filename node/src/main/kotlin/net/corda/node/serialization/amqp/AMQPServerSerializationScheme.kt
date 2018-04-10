@@ -1,4 +1,4 @@
-package net.corda.node.serialization
+package net.corda.node.serialization.amqp
 
 import net.corda.core.cordapp.Cordapp
 import net.corda.core.serialization.SerializationContext

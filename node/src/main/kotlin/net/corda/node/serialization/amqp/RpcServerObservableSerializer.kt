@@ -1,36 +1,53 @@
-package net.corda.node.services.messaging.kryo
+package net.corda.node.serialization.amqp
 
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.core.context.Trace
-import net.corda.core.serialization.SerializationContext
-import net.corda.core.serialization.SerializationDefaults
+import net.corda.node.serialization.kryo.RpcServerObservableSerializer
 import net.corda.node.services.messaging.ObservableSubscription
 import net.corda.node.services.messaging.RPCServer
 import net.corda.nodeapi.RPCApi
-import org.slf4j.LoggerFactory
+import net.corda.nodeapi.internal.serialization.amqp.*
+import org.apache.qpid.proton.codec.Data
 import rx.Notification
 import rx.Observable
 import rx.Subscriber
+import java.lang.reflect.Type
 
-object RpcServerObservableSerializer : Serializer<Observable<*>>() {
-    private object RpcObservableContextKey
+/*
+object PrivateKeySerializer : CustomSerializer.Implements<PrivateKey>(PrivateKey::class.java) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
-    
-    fun createContext(observableContext: RPCServer.ObservableContext): SerializationContext {
-        return SerializationDefaults.RPC_SERVER_CONTEXT.withProperty(RpcServerObservableSerializer.RpcObservableContextKey, observableContext)
+    private val allowedUseCases = EnumSet.of(Storage, Checkpoint)
+
+    override val schemaForDocumentation = Schema(listOf(RestrictedType(type.toString(), "", listOf(type.toString()), SerializerFactory.primitiveTypeName(ByteArray::class.java)!!, descriptor, emptyList())))
+
+    override fun writeDescribedObject(obj: PrivateKey, data: Data, type: Type, output: SerializationOutput) {
+        checkUseCase(allowedUseCases)
+        output.writeObject(obj.encoded, data, clazz)
     }
 
-    override fun read(kryo: Kryo?, input: Input?, type: Class<Observable<*>>?): Observable<Any> {
-        throw UnsupportedOperationException()
+    override fun readObject(obj: Any, schemas: SerializationSchemas, input: DeserializationInput): PrivateKey {
+        val bits = input.readObject(obj, schemas, ByteArray::class.java) as ByteArray
+        return Crypto.decodePrivateKey(bits)
+    }
+}
+ */
+
+object RpcServerObservableSerializer : CustomSerializer.Implements<Observable<*>> (Observable::class.java){
+    val observableContext = RPCServer.ObservableContext
+
+    override val schemaForDocumentation: Schema
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+
+    override fun readObject(obj: Any, schemas: SerializationSchemas, input: DeserializationInput): Observable<*> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun write(kryo: Kryo, output: Output, observable: Observable<*>) {
+    override fun writeDescribedObject(obj: Observable<*>, data: Data, type: Type, output: SerializationOutput) {
         val observableId = Trace.InvocationId.newInstance()
-        val observableContext = kryo.context[RpcObservableContextKey] as RPCServer.ObservableContext
+
+
+
         output.writeInvocationId(observableId)
         val observableWithSubscription = ObservableSubscription(
                 // We capture [observableContext] in the subscriber. Note that all synchronisation/kryo borrowing
@@ -49,7 +66,7 @@ object RpcServerObservableSerializer : Serializer<Observable<*>>() {
                             }
 
                             override fun onError(exception: Throwable) {
-                                log.error("onError called in materialize()d RPC Observable", exception)
+                                RpcServerObservableSerializer.log.error("onError called in materialize()d RPC Observable", exception)
                             }
 
                             override fun onCompleted() {
@@ -59,7 +76,9 @@ object RpcServerObservableSerializer : Serializer<Observable<*>>() {
         )
         observableContext.clientAddressToObservables.put(observableContext.clientAddress, observableId)
         observableContext.observableMap.put(observableId, observableWithSubscription)
+
     }
+
 
     private fun Output.writeInvocationId(id: Trace.InvocationId) {
         writeString(id.value)

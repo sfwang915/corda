@@ -6,8 +6,8 @@ import net.corda.core.DoNotImplement
 import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
 import net.corda.client.rpc.internal.kryo.KryoClientSerializationScheme
 import net.corda.core.serialization.internal.*
-import net.corda.node.serialization.KryoServerSerializationScheme
-import net.corda.node.serialization.AMQPServerSerializationScheme
+import net.corda.node.serialization.kryo.KryoServerSerializationScheme
+import net.corda.node.serialization.amqp.AMQPServerSerializationScheme
 import net.corda.nodeapi.internal.serialization.*
 import net.corda.testing.core.SerializationEnvironmentRule
 import java.util.concurrent.ConcurrentHashMap

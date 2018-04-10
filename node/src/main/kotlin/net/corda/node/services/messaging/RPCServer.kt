@@ -1,10 +1,6 @@
 package net.corda.node.services.messaging
 
 import co.paralleluniverse.common.util.SameThreadExecutor
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
@@ -28,7 +24,7 @@ import net.corda.core.utilities.*
 import net.corda.node.internal.security.AuthorizingSubject
 import net.corda.node.internal.security.RPCSecurityManager
 import net.corda.node.services.logging.pushToLoggingContext
-import net.corda.node.services.messaging.kryo.RpcServerObservableSerializer
+import net.corda.node.serialization.kryo.RpcServerObservableSerializer
 import net.corda.nodeapi.RPCApi
 import net.corda.nodeapi.externalTrace
 import net.corda.nodeapi.impersonatedActor
@@ -43,11 +39,7 @@ import org.apache.activemq.artemis.api.core.client.ActiveMQClient.DEFAULT_ACK_BA
 import org.apache.activemq.artemis.api.core.management.ActiveMQServerControl
 import org.apache.activemq.artemis.api.core.management.CoreNotificationType
 import org.apache.activemq.artemis.api.core.management.ManagementHelper
-import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import rx.Notification
-import rx.Observable
-import rx.Subscriber
 import rx.Subscription
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method

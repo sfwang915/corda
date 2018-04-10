@@ -1,6 +1,7 @@
 package net.corda.node.internal
 
 import com.codahale.metrics.JmxReporter
+import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
 import net.corda.client.rpc.internal.kryo.KryoClientSerializationScheme
 import net.corda.core.concurrent.CordaFuture
 import net.corda.core.internal.concurrent.openFuture
@@ -24,8 +25,8 @@ import net.corda.node.internal.artemis.ArtemisBroker
 import net.corda.node.internal.artemis.BrokerAddresses
 import net.corda.node.internal.cordapp.CordappLoader
 import net.corda.node.internal.security.RPCSecurityManagerImpl
-import net.corda.node.serialization.KryoServerSerializationScheme
-import net.corda.node.serialization.AMQPServerSerializationScheme
+import net.corda.node.serialization.kryo.KryoServerSerializationScheme
+import net.corda.node.serialization.amqp.AMQPServerSerializationScheme
 import net.corda.node.services.api.NodePropertiesStore
 import net.corda.node.services.api.SchemaService
 import net.corda.node.services.config.*
@@ -374,8 +375,10 @@ open class Node(configuration: NodeConfiguration,
         nodeSerializationEnv = SerializationEnvironmentImpl(
                 SerializationFactoryImpl().apply {
                     registerScheme(KryoServerSerializationScheme())
-                    registerScheme(AMQPServerSerializationScheme(cordappLoader.cordapps))
                     registerScheme(KryoClientSerializationScheme())
+
+                    registerScheme(AMQPServerSerializationScheme(cordappLoader.cordapps))
+                    registerScheme(AMQPClientSerializationScheme(cordappLoader.cordapps))
                 },
                 p2pContext = AMQP_P2P_CONTEXT.withClassLoader(classloader),
                 rpcServerContext = AMQP_RPC_SERVER_CONTEXT.withClassLoader(classloader),
