@@ -8,7 +8,6 @@ import net.corda.core.cordapp.CordappContext
 import net.corda.core.crypto.SecureHash
 import net.corda.core.internal.DEPLOYED_CORDAPP_UPLOADER
 import net.corda.core.internal.cordapp.CordappConfigProvider
-import net.corda.core.internal.cordapp.CordappImpl
 import net.corda.core.internal.createCordappContext
 import net.corda.core.node.services.AttachmentId
 import net.corda.core.node.services.AttachmentStorage
@@ -27,6 +26,10 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
 
     companion object {
         private val log = loggerFor<CordappProviderImpl>()
+
+        private data class CorDappLight(val contractClassNames: Set<String>, val jarPath: URL) {
+            constructor(corDapp: Cordapp) : this(corDapp.contractClassNames.toSet(), corDapp.jarPath)
+        }
     }
 
     private val contextCache = ConcurrentHashMap<Cordapp, CordappContext>()
@@ -86,9 +89,9 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
      * @param cordapp The cordapp to get the attachment ID
      * @return An attachment ID if it exists, otherwise nothing
      */
-    fun getCordappAttachmentId(cordapp: Cordapp): SecureHash? = cordappAttachments.inverse().get(cordapp)
+    fun getCordappAttachmentId(cordapp: Cordapp): SecureHash? = cordappAttachments.inverse().get(CorDappLight(cordapp))
 
-    private fun loadContractsIntoAttachmentStore(attachmentStorage: AttachmentStorage): Map<SecureHash, Cordapp> =
+    private fun loadContractsIntoAttachmentStore(attachmentStorage: AttachmentStorage): Map<SecureHash, CorDappLight> =
             cordapps.filter { !it.contractClassNames.isEmpty() }.deDupeSameContractClassNames().map {
                 it.jarPath.openStream().use { stream ->
                     try {
@@ -114,9 +117,9 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
      *
      *  To mitigate that we de-dupe CorDapps based on the same `contractClassNames`.
      */
-    private fun List<Cordapp>.deDupeSameContractClassNames(): List<Cordapp> {
+    private fun List<Cordapp>.deDupeSameContractClassNames(): List<CorDappLight> {
 
-        return this.fold(Pair(ArrayList<Cordapp>(), HashSet<String>())) { (acc, notedContracts), corDapp ->
+        return this.map { CorDappLight(it) }.fold(Pair(ArrayList<CorDappLight>(), HashSet<String>())) { (acc, notedContracts), corDapp ->
             if ((notedContracts - corDapp.contractClassNames).size == notedContracts.size) {
                 // Complete disconnect or "notedContracts" is empty.
                 acc += corDapp
@@ -125,8 +128,8 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
                 log.warn("Skipping $corDapp as all of it is contracts already included")
             } else {
                 val modifiedContractsList = corDapp.contractClassNames - notedContracts
-                val modifiedCordapp = (corDapp as CordappImpl).copy(contractClassNames = modifiedContractsList)
-                log.warn("Cordapp $corDapp has it contratc list modified to: $modifiedContractsList")
+                val modifiedCordapp = corDapp.copy(contractClassNames = modifiedContractsList)
+                log.warn("Cordapp $corDapp has it contracts list modified to: $modifiedContractsList")
                 acc += modifiedCordapp
                 notedContracts += modifiedContractsList
             }
