@@ -88,6 +88,8 @@ class KotlinCommercialPaperLegacyTest : ICommercialPaperTestTemplate {
     override fun getContract() = CommercialPaper.CP_PROGRAM_ID
 }
 
+private val cordappPackages = listOf(Cash::class.java.`package`.name, CommercialPaper::class.java.`package`.name)
+
 @RunWith(Parameterized::class)
 class CommercialPaperTestsGeneric {
     companion object {
@@ -102,7 +104,7 @@ class CommercialPaperTestsGeneric {
 
         private fun createMockServices(firstIdentity: TestIdentity, vararg moreIdentities: TestIdentity) : MockServices {
             return MockServices(
-                    listOf(CommercialPaper::class.java.`package`.name, Cash::class.java.`package`.name),
+                    cordappPackages,
                     firstIdentity,
                     makeTestIdentityService(*listOf(firstIdentity, *moreIdentities).map { it.identity }.toTypedArray()),
                     firstIdentity.keyPair)
@@ -256,7 +258,7 @@ class CommercialPaperTestsGeneric {
         val notaryServices = createMockServices(dummyNotary)
         val issuerServices = createMockServices(dummyCashIssuer, dummyNotary)
         val (aliceDatabase, aliceServices) = makeTestDatabaseAndMockServices(
-                listOf(Cash::class.java.`package`.name, CommercialPaper::class.java.`package`.name),
+                cordappPackages,
                 makeTestIdentityService(*allIdentities),
                 alice
         )
@@ -265,7 +267,7 @@ class CommercialPaperTestsGeneric {
         }
 
         val (megaCorpDatabase, megaCorpServices) = makeTestDatabaseAndMockServices(
-                listOf(Cash::class.java.`package`.name, CommercialPaper::class.java.`package`.name),
+                cordappPackages,
                 makeTestIdentityService(*allIdentities),
                 megaCorp
         )
