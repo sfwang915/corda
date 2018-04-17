@@ -84,7 +84,7 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
     fun getCordappAttachmentId(cordapp: Cordapp): SecureHash? = cordappAttachments.inverse().get(cordapp.jarPath)
 
     private fun loadContractsIntoAttachmentStore(attachmentStorage: AttachmentStorage): Map<SecureHash, URL> =
-            cordapps.filter { !it.contractClassNames.isEmpty() }.map {
+            cordapps.filter { !it.contractClassNames.isEmpty() }.deDupeSameContractClassNames().map {
                 it.jarPath.openStream().use { stream ->
                     try {
                         attachmentStorage.importAttachment(stream, DEPLOYED_CORDAPP_UPLOADER, null)
@@ -93,6 +93,35 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
                     }
                 } to it.jarPath
             }.toMap()
+
+
+    /**
+     * There might be cases when there are CorDapps that have the same contract classes. E.g. during Gradle unit test run the following been observed:
+     *
+     *     1. contractClassNames=[net.corda.finance.contracts.asset.Cash, net.corda.finance.contracts.asset.CommodityContract, net.corda.finance.contracts.asset.Obligation, net.corda.finance.contracts.asset.OnLedgerAsset] ->
+     *          jarPath=file:/Z:/corda/finance/build/tmp/generated-test-cordapps/net.corda.finance.contracts.asset-9562408e-b372-4194-8259-91dedaedc0ea.jar
+     *
+     *     2. contractClassNames=[net.corda.finance.contracts.asset.Cash, net.corda.finance.contracts.asset.CommodityContract, net.corda.finance.contracts.asset.Obligation, net.corda.finance.contracts.asset.OnLedgerAsset] ->
+     *          jarPath=file:/Z:/corda/finance/build/libs/corda-finance-corda-4.0-snapshot.jar
+     *
+     *  These will be represented as distinct attachments with different hashes. Since underlying storage is `HashBiMap` when look-up is the ordering is not guaranteed and given contract e.g. `net.corda.finance.contracts.asset.Cash`
+     *  can be found in either of the Jars which causes flakiness.
+     *
+     *  To mitigate that we de-dupe CorDapps based on the same `contractClassNames`, take the first one by alphanumeric ordering and produce a warning.
+     */
+    private fun List<Cordapp>.deDupeSameContractClassNames(): List<Cordapp> {
+        val grouped = this.groupBy { it.contractClassNames.toSet() }
+        val (sizeofOne: List<Map.Entry<Set<String>, List<Cordapp>>>, moreThanOne: List<Map.Entry<Set<String>, List<Cordapp>>>) = grouped.entries.partition { it.value.size == 1 }
+        val singletons = sizeofOne.map { it.value }.flatten()
+
+        val selectedFromMoreThanOne = moreThanOne.map { entry ->
+                // Sort based on full URI representation and take the first one.
+                val cordappToTake = entry.value.map { Pair(it.jarPath.toURI().toASCIIString(), it) }.sortedBy { it.first }.first().second
+                log.warn("ContractClasses: ${entry.key} are included into multiple jars: ${entry.value.map { it.jarPath }}. Will only take: ${cordappToTake.jarPath.toURI()}")
+                cordappToTake
+        }
+        return singletons + selectedFromMoreThanOne
+    }
 
     /**
      * Get the current cordapp context for the given CorDapp
