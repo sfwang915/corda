@@ -8,6 +8,7 @@ import net.corda.core.cordapp.CordappContext
 import net.corda.core.crypto.SecureHash
 import net.corda.core.internal.DEPLOYED_CORDAPP_UPLOADER
 import net.corda.core.internal.cordapp.CordappConfigProvider
+import net.corda.core.internal.cordapp.CordappImpl
 import net.corda.core.internal.createCordappContext
 import net.corda.core.node.services.AttachmentId
 import net.corda.core.node.services.AttachmentStorage
@@ -111,20 +112,26 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
      *  These will be represented as distinct attachments with different hashes. Since underlying storage is `HashBiMap` when look-up is the ordering is not guaranteed and given contract e.g. `net.corda.finance.contracts.asset.Cash`
      *  can be found in either of the Jars which causes flakiness.
      *
-     *  To mitigate that we de-dupe CorDapps based on the same `contractClassNames`, take the first one by alphanumeric ordering and produce a warning.
+     *  To mitigate that we de-dupe CorDapps based on the same `contractClassNames`.
      */
     private fun List<Cordapp>.deDupeSameContractClassNames(): List<Cordapp> {
-        val grouped = this.groupBy { it.contractClassNames.toSet() }
-        val (sizeofOne: List<Map.Entry<Set<String>, List<Cordapp>>>, moreThanOne: List<Map.Entry<Set<String>, List<Cordapp>>>) = grouped.entries.partition { it.value.size == 1 }
-        val singletons = sizeofOne.map { it.value }.flatten()
 
-        val selectedFromMoreThanOne = moreThanOne.map { entry ->
-                // Sort based on full URI representation and take the first one.
-                val cordappToTake = entry.value.map { Pair(it.jarPath.toURI().toASCIIString(), it) }.sortedBy { it.first }.first().second
-                log.warn("ContractClasses: ${entry.key} are included into multiple jars: ${entry.value.map { it.jarPath }}. Will only take: ${cordappToTake.jarPath.toURI()}")
-                cordappToTake
-        }
-        return singletons + selectedFromMoreThanOne
+        return this.fold(Pair(ArrayList<Cordapp>(), HashSet<String>())) { (acc, notedContracts), corDapp ->
+            if ((notedContracts - corDapp.contractClassNames).size == notedContracts.size) {
+                // Complete disconnect or "notedContracts" is empty.
+                acc += corDapp
+                notedContracts += corDapp.contractClassNames
+            } else if (notedContracts.containsAll(corDapp.contractClassNames)) {
+                log.warn("Skipping $corDapp as all of it is contracts already included")
+            } else {
+                val modifiedContractsList = corDapp.contractClassNames - notedContracts
+                val modifiedCordapp = (corDapp as CordappImpl).copy(contractClassNames = modifiedContractsList)
+                log.warn("Cordapp $corDapp has it contratc list modified to: $modifiedContractsList")
+                acc += modifiedCordapp
+                notedContracts += modifiedContractsList
+            }
+            Pair(acc, notedContracts)
+        }.first
     }
 
     /**
