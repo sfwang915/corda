@@ -34,6 +34,10 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
      * Current known CorDapps loaded on this node
      */
     override val cordapps get() = cordappLoader.cordapps
+
+    /**
+     * cordappAttachments.size <= cordapps.size since not all CorDapps have contracts
+     */
     private val cordappAttachments = HashBiMap.create(loadContractsIntoAttachmentStore(attachmentStorage))
 
     init {
@@ -72,7 +76,7 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
     }
 
     override fun getContractAttachmentID(contractClassName: ContractClassName): AttachmentId? {
-        return getCordappForClass(contractClassName)?.let(this::getCordappAttachmentId)
+        return cordappAttachments.entries.find { it.value.contractClassNames.contains(contractClassName) }?.key
     }
 
     /**
@@ -81,9 +85,9 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
      * @param cordapp The cordapp to get the attachment ID
      * @return An attachment ID if it exists, otherwise nothing
      */
-    fun getCordappAttachmentId(cordapp: Cordapp): SecureHash? = cordappAttachments.inverse().get(cordapp.jarPath)
+    fun getCordappAttachmentId(cordapp: Cordapp): SecureHash? = cordappAttachments.inverse().get(cordapp)
 
-    private fun loadContractsIntoAttachmentStore(attachmentStorage: AttachmentStorage): Map<SecureHash, URL> =
+    private fun loadContractsIntoAttachmentStore(attachmentStorage: AttachmentStorage): Map<SecureHash, Cordapp> =
             cordapps.filter { !it.contractClassNames.isEmpty() }.deDupeSameContractClassNames().map {
                 it.jarPath.openStream().use { stream ->
                     try {
@@ -91,7 +95,7 @@ open class CordappProviderImpl(private val cordappLoader: CordappLoader,
                     } catch (faee: java.nio.file.FileAlreadyExistsException) {
                         AttachmentId.parse(faee.message!!)
                     }
-                } to it.jarPath
+                } to it
             }.toMap()
 
 
