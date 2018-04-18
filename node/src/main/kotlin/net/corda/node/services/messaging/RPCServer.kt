@@ -24,7 +24,7 @@ import net.corda.core.utilities.*
 import net.corda.node.internal.security.AuthorizingSubject
 import net.corda.node.internal.security.RPCSecurityManager
 import net.corda.node.services.logging.pushToLoggingContext
-import net.corda.node.serialization.kryo.RpcServerObservableSerializer
+import net.corda.node.serialization.amqp.RpcServerObservableSerializer
 import net.corda.nodeapi.RPCApi
 import net.corda.nodeapi.externalTrace
 import net.corda.nodeapi.impersonatedActor
@@ -77,7 +77,7 @@ class RPCServer(
         private val ops: RPCOps,
         private val rpcServerUsername: String,
         private val rpcServerPassword: String,
-        private val serverLocator: ServerLocator,
+        private val serverLocator: ServerLocator?,
         private val securityManager: RPCSecurityManager,
         private val nodeLegalName: CordaX500Name,
         private val rpcConfiguration: RPCServerConfiguration = RPCServerConfiguration.default
@@ -165,7 +165,9 @@ class RPCServer(
                     TimeUnit.MILLISECONDS
             )
 
-            sessionFactory = serverLocator.createSessionFactory()
+            sessionFactory = serverLocator?.createSessionFactory() ?: throw IllegalStateException(
+                    "serverLocator cannot be null within an RPCServer intended for actual use")
+
             producerSession = sessionFactory!!.createSession(rpcServerUsername, rpcServerPassword, false, true, true, false, DEFAULT_ACK_BATCH_SIZE)
             createRpcProducer(producerSession!!)
             consumerSession = sessionFactory!!.createSession(rpcServerUsername, rpcServerPassword, false, true, true, false, DEFAULT_ACK_BATCH_SIZE)
@@ -411,15 +413,16 @@ class RPCServer(
      * muxed correctly. Note that the context construction itself is quite cheap.
      */
     inner class ObservableContext(
-            val observableMap: ObservableSubscriptionMap,
-            val clientAddressToObservables: SetMultimap<SimpleString, InvocationId>,
-            val deduplicationIdentity: String,
-            val clientAddress: SimpleString
-    ) {
+            override val observableMap: ObservableSubscriptionMap,
+            override val clientAddressToObservables: SetMultimap<SimpleString, InvocationId>,
+            override val deduplicationIdentity: String,
+            override val clientAddress: SimpleString
+    ) : ObservableContextInterface {
         private val serializationContextWithObservableContext = RpcServerObservableSerializer.createContext(this)
 
-        fun sendMessage(serverToClient: RPCApi.ServerToClient) {
-            sendJobQueue.put(RpcSendJob.Send(contextDatabaseOrNull, clientAddress, serializationContextWithObservableContext, serverToClient))
+        override fun sendMessage(serverToClient: RPCApi.ServerToClient) {
+            sendJobQueue.put(RpcSendJob.Send(contextDatabaseOrNull, clientAddress,
+                    serializationContextWithObservableContext, serverToClient))
         }
     }
 

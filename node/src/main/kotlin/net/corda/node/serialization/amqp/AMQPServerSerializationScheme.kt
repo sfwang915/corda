@@ -11,9 +11,11 @@ class AMQPServerSerializationScheme(cordapps: List<Cordapp> = emptyList()) : Abs
         throw UnsupportedOperationException()
     }
 
-    override fun rpcServerSerializerFactory(context: SerializationContext) = getSerializerFactory(context).also {
-        // register the
-    }
+    override fun rpcServerSerializerFactory(context: SerializationContext) =
+        SerializerFactory(context.whitelist, context.deserializationClassLoader).also { f ->
+            f.register(RpcServerObservableSerializer(this))
+        }
+
 
     override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase): Boolean {
         return canDeserializeVersion(magic) &&
