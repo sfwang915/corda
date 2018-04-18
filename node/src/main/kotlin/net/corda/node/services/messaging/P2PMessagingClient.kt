@@ -576,7 +576,7 @@ class P2PMessagingClient(private val config: NodeConfiguration,
 
         scheduledMessageRedeliveries[retryId] = messagingExecutor.schedule({
             sendWithRetry(retryCount + 1, address, message, retryId)
-        }, messageRedeliveryDelaySeconds, TimeUnit.SECONDS)
+        }, messageRedeliveryDelaySeconds * Math.pow(2.0, retryCount.toDouble()).toLong(), TimeUnit.SECONDS)
     }
 
     override fun cancelRedelivery(retryId: Long) {
