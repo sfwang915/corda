@@ -1,10 +1,6 @@
 package net.corda.client.rpc.internal
 
 import co.paralleluniverse.common.util.SameThreadExecutor
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
@@ -14,7 +10,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.client.rpc.CordaRPCClientConfiguration
 import net.corda.client.rpc.RPCException
 import net.corda.client.rpc.RPCSinceVersion
-import net.corda.client.rpc.internal.kryo.RpcClientObservableSerializer
+import net.corda.client.rpc.internal.serialization.amqp.RpcClientObservableSerializer
 import net.corda.core.context.Actor
 import net.corda.core.context.Trace
 import net.corda.core.context.Trace.InvocationId
@@ -42,7 +38,6 @@ import java.lang.reflect.Method
 import java.util.*
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.jvm.javaMethod
 
@@ -125,14 +120,17 @@ class RPCClientProxyHandler(
     private val rpcReplyMap = RpcReplyMap()
     // Optionally holds RPC call site stack traces to be shown on errors/warnings.
     private val callSiteMap = if (rpcConfiguration.trackRpcCallSites) CallSiteMap() else null
+
     // Holds the Observables and a reference store to keep Observables alive when subscribed to.
     private val observableContext = ObservableContext(
             callSiteMap = callSiteMap,
             observableMap = createRpcObservableMap(),
             hardReferenceStore = Collections.synchronizedSet(mutableSetOf<Observable<*>>())
     )
+
     // Holds a reference to the scheduled reaper.
     private var reaperScheduledFuture: ScheduledFuture<*>? = null
+
     // The protocol version of the server, to be initialised to the value of [RPCOps.protocolVersion]
     private var serverProtocolVersion: Int? = null
 
@@ -140,7 +138,9 @@ class RPCClientProxyHandler(
     private val observablesToReap = ThreadBox(object {
         var observables = ArrayList<InvocationId>()
     })
-    private val serializationContextWithObservableContext = RpcClientObservableSerializer.createContext(serializationContext, observableContext)
+
+    private val serializationContextWithObservableContext = RpcClientObservableSerializer.createContext (
+            observableContext, serializationContext)
 
     private fun createRpcObservableMap(): RpcObservableMap {
         val onObservableRemove = RemovalListener<InvocationId, UnicastSubject<Notification<*>>> { key, value, cause ->
@@ -442,7 +442,7 @@ private typealias RpcReplyMap = ConcurrentHashMap<InvocationId, SettableFuture<A
 private typealias CallSiteMap = ConcurrentHashMap<InvocationId, Throwable?>
 
 /**
- * Holds a context available during Kryo deserialisation of messages that are expected to contain Observables.
+ * Holds a context available during Kryo deserialization of messages that are expected to contain Observables.
  *
  * @param observableMap holds the Observables that are ultimately exposed to the user.
  * @param hardReferenceStore holds references to Observables we want to keep alive while they are subscribed to.

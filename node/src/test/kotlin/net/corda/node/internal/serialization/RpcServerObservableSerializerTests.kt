@@ -68,6 +68,7 @@ class RpcServerObservableSerializerTests {
     @Test
     fun serialiseFakeObservable() {
         val properties : MutableMap<Any, Any> = mutableMapOf()
+
         val context = SerializationContextImpl(
                 preferredSerializationVersion = amqpMagic,
                 deserializationClassLoader = javaClass.classLoader,
@@ -85,15 +86,21 @@ class RpcServerObservableSerializerTests {
 
         val newContext = RpcServerObservableSerializer.createContext(observable, context)
 
-        val sf = SerializerFactory(cl = javaClass.classLoader, whitelist = AllWhitelist).apply {
+        val sf = SerializerFactory(
+                cl = javaClass.classLoader,
+                whitelist = AllWhitelist
+        ).apply {
             register(RpcServerObservableSerializer(scheme, newContext))
         }
 
         val obs = Observable.create<Int>( { 12 })
 
-        val bytesAndSchemas = SerializationOutput(sf).serializeAndReturnSchema(obs)
-        bytesAndSchemas.schema.types.forEach {
-            println (it)
+
+        SerializationOutput(sf).serializeAndReturnSchema(obs)
+
+        observable.clientAddressToObservables.forEach { t, u ->
+            println (t)
+            println (u)
         }
     }
 

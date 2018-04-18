@@ -1,8 +1,8 @@
 package net.corda.node.internal
 
 import com.codahale.metrics.JmxReporter
-import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
-import net.corda.client.rpc.internal.kryo.KryoClientSerializationScheme
+import net.corda.client.rpc.internal.serialization.amqp.AMQPClientSerializationScheme
+import net.corda.client.rpc.internal.serialization.kryo.KryoClientSerializationScheme
 import net.corda.core.concurrent.CordaFuture
 import net.corda.core.internal.concurrent.openFuture
 import net.corda.core.internal.concurrent.thenMatch

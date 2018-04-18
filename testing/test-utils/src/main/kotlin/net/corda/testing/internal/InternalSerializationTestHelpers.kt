@@ -3,8 +3,8 @@ package net.corda.testing.internal
 import com.nhaarman.mockito_kotlin.doNothing
 import com.nhaarman.mockito_kotlin.whenever
 import net.corda.core.DoNotImplement
-import net.corda.client.rpc.internal.amqp.AMQPClientSerializationScheme
-import net.corda.client.rpc.internal.kryo.KryoClientSerializationScheme
+import net.corda.client.rpc.internal.serialization.amqp.AMQPClientSerializationScheme
+import net.corda.client.rpc.internal.serialization.kryo.KryoClientSerializationScheme
 import net.corda.core.serialization.internal.*
 import net.corda.node.serialization.kryo.KryoServerSerializationScheme
 import net.corda.node.serialization.amqp.AMQPServerSerializationScheme

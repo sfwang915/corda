@@ -14,7 +14,7 @@ class TestObservableContext(
         override val clientAddress: SimpleString
 ) : ObservableContextInterface {
     override fun sendMessage(serverToClient: RPCApi.ServerToClient) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        println ("\n\nHALP\n\n")
     }
 
 }

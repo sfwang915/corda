@@ -50,7 +50,9 @@ class RpcServerObservableSerializer(
             type: Type,
             output: SerializationOutput
     ) {
+        println ("writeDescribed")
         val observableId = Trace.InvocationId.newInstance()
+        println ("writeDescribed - id = ${observableId}")
         val observableContext = context.properties[RpcServerObservableSerializer.RpcObservableContextKey]
                 as ObservableContextInterface
 
@@ -86,7 +88,7 @@ class RpcServerObservableSerializer(
                         }
                 )
         )
-        
+
         observableContext.clientAddressToObservables.put(observableContext.clientAddress, observableId)
         observableContext.observableMap.put(observableId, observableWithSubscription)
     }
