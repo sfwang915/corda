@@ -101,7 +101,6 @@ class P2PMessagingClient(private val config: NodeConfiguration,
     companion object {
         private val log = contextLogger()
         private val amqDelayMillis = System.getProperty("amq.delivery.delay.ms", "0").toInt()
-        private const val messageMaxRetryCount: Int = 3
 
         fun createProcessedMessage(): AppendOnlyPersistentMap<String, Instant, ProcessedMessage, String> {
             return AppendOnlyPersistentMap(
@@ -143,6 +142,9 @@ class P2PMessagingClient(private val config: NodeConfiguration,
         }
     }
 
+    private val messageMaxRetryCount: Int = config.p2pMessagingRetryConfiguration.maxRetryCount
+    private val backoffBase: Double = config.p2pMessagingRetryConfiguration.backoffBase
+
     private class InnerState {
         var started = false
         var running = false
@@ -174,7 +176,7 @@ class P2PMessagingClient(private val config: NodeConfiguration,
     private val messagingExecutor = AffinityExecutor.ServiceAffinityExecutor("Messaging ${myIdentity.toStringShort()}", 1)
 
     override val myAddress: SingleMessageRecipient = NodeAddress(myIdentity, advertisedAddress)
-    private val messageRedeliveryDelaySeconds = config.messageRedeliveryDelaySeconds.toLong()
+    private val messageRedeliveryDelaySeconds = config.p2pMessagingRetryConfiguration.messageRedeliveryDelay.seconds
     private val state = ThreadBox(InnerState())
     private val knownQueues = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private val handlers = CopyOnWriteArrayList<Handler>()
@@ -576,7 +578,7 @@ class P2PMessagingClient(private val config: NodeConfiguration,
 
         scheduledMessageRedeliveries[retryId] = messagingExecutor.schedule({
             sendWithRetry(retryCount + 1, address, message, retryId)
-        }, messageRedeliveryDelaySeconds * Math.pow(2.0, retryCount.toDouble()).toLong(), TimeUnit.SECONDS)
+        }, messageRedeliveryDelaySeconds * Math.pow(backoffBase, retryCount.toDouble()).toLong(), TimeUnit.SECONDS)
     }
 
     override fun cancelRedelivery(retryId: Long) {
