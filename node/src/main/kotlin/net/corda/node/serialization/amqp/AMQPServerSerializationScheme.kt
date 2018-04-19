@@ -12,8 +12,11 @@ class AMQPServerSerializationScheme(cordapps: List<Cordapp> = emptyList()) : Abs
     }
 
     override fun rpcServerSerializerFactory(context: SerializationContext) =
-        SerializerFactory(context.whitelist, context.deserializationClassLoader).also { f ->
-            f.register(RpcServerObservableSerializer(this))
+        SerializerFactory(
+                context.whitelist,
+                context.deserializationClassLoader
+        ).also { f ->
+            f.register(RpcServerObservableSerializer(context))
         }
 
 

@@ -15,7 +15,7 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * A [Serializer] to deserialise Observables once the corresponding Kryo instance has been provided with an [ObservableContext].
+ * A [Serializer] to deserialize Observables once the corresponding Kryo instance has been provided with an [ObservableContext].
  */
 object RpcClientObservableSerializer : Serializer<Observable<*>>() {
     private object RpcObservableContextKey

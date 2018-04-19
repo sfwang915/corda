@@ -8,11 +8,13 @@ import net.corda.node.internal.serialization.testutils.*
 import net.corda.node.serialization.amqp.RpcServerObservableSerializer
 import net.corda.node.services.messaging.ObservableSubscription
 import net.corda.node.services.messaging.ObservableSubscriptionMap
+import net.corda.nodeapi.internal.serialization.AMQP_RPC_SERVER_CONTEXT
 import net.corda.nodeapi.internal.serialization.AllWhitelist
 import net.corda.nodeapi.internal.serialization.SerializationContextImpl
 import net.corda.nodeapi.internal.serialization.amqp.SerializationOutput
 import net.corda.nodeapi.internal.serialization.amqp.SerializerFactory
 import net.corda.nodeapi.internal.serialization.amqp.amqpMagic
+
 import org.apache.activemq.artemis.api.core.SimpleString
 import org.junit.Test
 import rx.Observable
@@ -37,28 +39,17 @@ class RpcServerObservableSerializerTests {
     @Test
     fun canSerializerBeRegistered() {
         val sf = SerializerFactory(cl = javaClass.classLoader, whitelist = AllWhitelist)
-        sf.register(RpcServerObservableSerializer(scheme))
+        sf.register(RpcServerObservableSerializer(AMQP_RPC_SERVER_CONTEXT))
     }
 
     @Test
     fun canAssociateWithContext() {
-        val properties : MutableMap<Any, Any> = mutableMapOf()
-        val context = SerializationContextImpl(
-                preferredSerializationVersion = amqpMagic,
-                deserializationClassLoader = javaClass.classLoader,
-                whitelist = AllWhitelist,
-                properties = properties,
-                objectReferencesEnabled = false,
-                useCase = SerializationContext.UseCase.Testing,
-                encoding = null)
-
         val observable = TestObservableContext(
                 subscriptionMap(),
                 clientAddressToObservables = LinkedHashMultimap.create(),
                 deduplicationIdentity = "thisIsATest",
                 clientAddress = SimpleString ("clientAddress"))
-
-        val newContext = RpcServerObservableSerializer.createContext(observable, context)
+        val newContext = RpcServerObservableSerializer.createContext(observable, serializationContext)
 
         assertEquals(1, newContext.properties.size)
         assertTrue(newContext.properties.containsKey(RpcServerObservableSerializer.RpcObservableContextKey))
@@ -67,30 +58,19 @@ class RpcServerObservableSerializerTests {
 
     @Test
     fun serialiseFakeObservable() {
-        val properties : MutableMap<Any, Any> = mutableMapOf()
-
-        val context = SerializationContextImpl(
-                preferredSerializationVersion = amqpMagic,
-                deserializationClassLoader = javaClass.classLoader,
-                whitelist = AllWhitelist,
-                properties = properties,
-                objectReferencesEnabled = false,
-                useCase = SerializationContext.UseCase.Testing,
-                encoding = null)
-
         val observable = TestObservableContext(
                 subscriptionMap(),
                 clientAddressToObservables = LinkedHashMultimap.create(),
                 deduplicationIdentity = "thisIsATest",
                 clientAddress = SimpleString ("clientAddress"))
 
-        val newContext = RpcServerObservableSerializer.createContext(observable, context)
+        val newContext = RpcServerObservableSerializer.createContext(observable, serializationContext)
 
         val sf = SerializerFactory(
                 cl = javaClass.classLoader,
                 whitelist = AllWhitelist
         ).apply {
-            register(RpcServerObservableSerializer(scheme, newContext))
+            register(RpcServerObservableSerializer(newContext))
         }
 
         val obs = Observable.create<Int>( { 12 })

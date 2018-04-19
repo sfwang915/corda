@@ -112,7 +112,7 @@ sealed class PropertySerializer(val name: String, val propertyReader: PropertyRe
 
     /**
      * A property serializer for the AMQP char type, needed as a specialisation as the underlying
-     * value of the character is stored in numeric UTF-16 form and on deserialisation requires explicit
+     * value of the character is stored in numeric UTF-16 form and on deserialization requires explicit
      * casting back to a char otherwise it's treated as an Integer and a TypeMismatch occurs
      */
     class AMQPCharPropertySerializer(name: String, readMethod: PropertyReader) :

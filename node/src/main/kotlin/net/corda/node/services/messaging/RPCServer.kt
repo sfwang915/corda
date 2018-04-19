@@ -18,6 +18,7 @@ import net.corda.core.identity.CordaX500Name
 import net.corda.core.internal.LifeCycle
 import net.corda.core.messaging.RPCOps
 import net.corda.core.serialization.SerializationContext
+import net.corda.core.serialization.SerializationDefaults
 import net.corda.core.serialization.SerializationDefaults.RPC_SERVER_CONTEXT
 import net.corda.core.serialization.deserialize
 import net.corda.core.utilities.*
@@ -418,7 +419,9 @@ class RPCServer(
             override val deduplicationIdentity: String,
             override val clientAddress: SimpleString
     ) : ObservableContextInterface {
-        private val serializationContextWithObservableContext = RpcServerObservableSerializer.createContext(this)
+        private val serializationContextWithObservableContext = RpcServerObservableSerializer.createContext(
+                observableContext = this,
+                serializationContext = SerializationDefaults.RPC_SERVER_CONTEXT)
 
         override fun sendMessage(serverToClient: RPCApi.ServerToClient) {
             sendJobQueue.put(RpcSendJob.Send(contextDatabaseOrNull, clientAddress,

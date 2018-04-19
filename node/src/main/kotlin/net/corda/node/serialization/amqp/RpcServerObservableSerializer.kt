@@ -12,26 +12,32 @@ import org.apache.qpid.proton.codec.Data
 import rx.Notification
 import rx.Observable
 import rx.Subscriber
+import java.io.NotSerializableException
 
 import java.lang.reflect.Type
 
 class RpcServerObservableSerializer(
-        private val scheme: AbstractAMQPSerializationScheme,
-        private val context: SerializationContext = SerializationDefaults.RPC_SERVER_CONTEXT
+        private val context: SerializationContext
 ) : CustomSerializer.Implements<Observable<*>>(
         Observable::class.java
 ) {
     // Would be great to make this private, but then it's so much harder to unit test
     object RpcObservableContextKey
 
+    init {
+        if (context == SerializationDefaults.RPC_SERVER_CONTEXT) {
+            throw NotSerializableException ("Cannot create ObservableSerializer with default context")
+        }
+
+    }
+
+
     companion object {
         fun createContext(
                 observableContext: ObservableContextInterface,
-                context: SerializationContext = SerializationDefaults.RPC_SERVER_CONTEXT
-        ) : SerializationContext {
-            return context.withProperty(
+                serializationContext: SerializationContext
+        ) = serializationContext.withProperty(
                     RpcServerObservableSerializer.RpcObservableContextKey, observableContext)
-        }
     }
 
     override val schemaForDocumentation: Schema
@@ -50,9 +56,11 @@ class RpcServerObservableSerializer(
             type: Type,
             output: SerializationOutput
     ) {
-        println ("writeDescribed")
         val observableId = Trace.InvocationId.newInstance()
-        println ("writeDescribed - id = ${observableId}")
+        if (RpcServerObservableSerializer.RpcObservableContextKey !in context.properties) {
+            throw NotSerializableException ("Missing Observable Key on Server Serializer context == SERVER ${context == SerializationDefaults.RPC_SERVER_CONTEXT}")
+        }
+
         val observableContext = context.properties[RpcServerObservableSerializer.RpcObservableContextKey]
                 as ObservableContextInterface
 

@@ -1,15 +1,20 @@
 package net.corda.client.rpc.internal.serialization.amqp
 
+
 import net.corda.client.rpc.internal.ObservableContext
-import net.corda.client.rpc.internal.serialization.kryo.RpcClientObservableSerializer.readInvocationId
+
+import net.corda.core.context.Trace
 import net.corda.core.serialization.SerializationContext
 import net.corda.core.serialization.SerializationDefaults
+import net.corda.nodeapi.RPCApi
 import net.corda.nodeapi.internal.serialization.amqp.*
 import org.apache.qpid.proton.codec.Data
 import rx.Notification
 import rx.Observable
 import rx.subjects.UnicastSubject
+import java.io.NotSerializableException
 import java.lang.reflect.Type
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import javax.transaction.NotSupportedException
 
@@ -23,11 +28,10 @@ class RpcClientObservableSerializer (
     companion object {
         fun createContext(
                 observableContext: ObservableContext,
-                context: SerializationContext = SerializationDefaults.RPC_SERVER_CONTEXT
-        ) : SerializationContext {
-            return context.withProperty(
+                context: SerializationContext = SerializationDefaults.RPC_CLIENT_CONTEXT
+        ) = context.withProperty (
                     RpcClientObservableSerializer.RpcObservableContextKey, observableContext)
-        }
+
     }
 
     private fun <T> pinInSubscriptions(observable: Observable<T>, hardReferenceStore: MutableSet<Observable<*>>): Observable<T> {
@@ -47,25 +51,38 @@ class RpcClientObservableSerializer (
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
     override fun readObject(obj: Any, schemas: SerializationSchemas, input: DeserializationInput): Observable<*> {
+        val observableContext = context.properties[RpcClientObservableSerializer.RpcObservableContextKey]
+                as ObservableContext
 
-        val observableContext = kryo.context[net.corda.client.rpc.internal.serialization.kryo.RpcClientObservableSerializer.RpcObservableContextKey] as ObservableContext
+        if (obj !is List<*>) throw NotSerializableException ("Input must be a serialised list")
+        if (obj.size != 2) throw NotSerializableException ("Expecting two elementsm have ${obj.size}")
 
-        val observableId = input.readInvocationId() ?: throw IllegalStateException("Unable to read invocationId from Input.")
+        val observableId : Trace.InvocationId = Trace.InvocationId((obj[0] as String), Instant.ofEpochMilli((obj[1] as Long)))
         val observable = UnicastSubject.create<Notification<*>>()
+
+
         require(observableContext.observableMap.getIfPresent(observableId) == null) {
             "Multiple Observables arrived with the same ID $observableId"
         }
-        val rpcCallSite = net.corda.client.rpc.internal.serialization.kryo.RpcClientObservableSerializer.getRpcCallSite(kryo, observableContext)
+
+        val rpcCallSite = getRpcCallSite(context, observableContext)
+
         observableContext.observableMap.put(observableId, observable)
         observableContext.callSiteMap?.put(observableId, rpcCallSite)
+
         // We pin all Observables into a hard reference store (rooted in the RPC proxy) on subscription so that users
         // don't need to store a reference to the Observables themselves.
-        return net.corda.client.rpc.internal.serialization.kryo.RpcClientObservableSerializer.pinInSubscriptions(observable, observableContext.hardReferenceStore).doOnUnsubscribe {
+        return pinInSubscriptions(observable, observableContext.hardReferenceStore).doOnUnsubscribe {
             // This causes Future completions to give warnings because the corresponding OnComplete sent from the server
             // will arrive after the client unsubscribes from the observable and consequently invalidates the mapping.
             // The unsubscribe is due to [ObservableToFuture]'s use of first().
             observableContext.observableMap.invalidate(observableId)
-        }.dematerialize()
+        }.dematerialize<Any>()
+    }
+
+    private fun getRpcCallSite(context: SerializationContext, observableContext: ObservableContext): Throwable? {
+        val rpcRequestOrObservableId = context.properties[RPCApi.RpcRequestOrObservableIdKey] as Trace.InvocationId
+        return observableContext.callSiteMap?.get(rpcRequestOrObservableId)
     }
 
     override fun writeDescribedObject(obj: Observable<*>, data: Data, type: Type, output: SerializationOutput) {
