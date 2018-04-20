@@ -138,12 +138,13 @@ abstract class AbstractAMQPSerializationScheme(
 
     override fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): T {
         val serializerFactory = getSerializerFactory(context)
-        return DeserializationInput(serializerFactory).deserialize(byteSequence, clazz)
+        return DeserializationInput(serializerFactory).deserialize(byteSequence, clazz, context)
     }
 
     override fun <T : Any> serialize(obj: T, context: SerializationContext): SerializedBytes<T> {
         val serializerFactory = getSerializerFactory(context)
-        return SerializationOutput(serializerFactory).serialize(obj)
+
+        return SerializationOutput(serializerFactory).serialize(obj, context)
     }
 
     protected fun canDeserializeVersion(magic: CordaSerializationMagic) = magic == amqpMagic

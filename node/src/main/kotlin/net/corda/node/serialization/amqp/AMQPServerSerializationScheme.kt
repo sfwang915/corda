@@ -16,7 +16,7 @@ class AMQPServerSerializationScheme(cordapps: List<Cordapp> = emptyList()) : Abs
                 context.whitelist,
                 context.deserializationClassLoader
         ).also { f ->
-            f.register(RpcServerObservableSerializer(context))
+            f.register(RpcServerObservableSerializer())
         }
 
 

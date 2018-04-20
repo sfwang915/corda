@@ -16,21 +16,11 @@ import java.io.NotSerializableException
 
 import java.lang.reflect.Type
 
-class RpcServerObservableSerializer(
-        private val context: SerializationContext
-) : CustomSerializer.Implements<Observable<*>>(
+class RpcServerObservableSerializer : CustomSerializer.Implements<Observable<*>>(
         Observable::class.java
 ) {
     // Would be great to make this private, but then it's so much harder to unit test
     object RpcObservableContextKey
-
-    init {
-        if (context == SerializationDefaults.RPC_SERVER_CONTEXT) {
-            throw NotSerializableException ("Cannot create ObservableSerializer with default context")
-        }
-
-    }
-
 
     companion object {
         fun createContext(
@@ -45,7 +35,8 @@ class RpcServerObservableSerializer(
 
     override fun readObject(
             obj: Any, schemas: SerializationSchemas,
-            input: DeserializationInput
+            input: DeserializationInput,
+            context: SerializationContext
     ) : Observable<*> {
         throw UnsupportedOperationException()
     }
@@ -54,7 +45,8 @@ class RpcServerObservableSerializer(
             obj: Observable<*>,
             data: Data,
             type: Type,
-            output: SerializationOutput
+            output: SerializationOutput,
+            context: SerializationContext
     ) {
         val observableId = Trace.InvocationId.newInstance()
         if (RpcServerObservableSerializer.RpcObservableContextKey !in context.properties) {

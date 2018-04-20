@@ -18,11 +18,7 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import javax.transaction.NotSupportedException
 
-class RpcClientObservableSerializer (
-        private val context: SerializationContext = SerializationDefaults.RPC_CLIENT_CONTEXT
-) : CustomSerializer.Implements<Observable<*>>(
-        Observable::class.java
-){
+class RpcClientObservableSerializer : CustomSerializer.Implements<Observable<*>>(Observable::class.java){
     private object RpcObservableContextKey
 
     companion object {
@@ -50,7 +46,9 @@ class RpcClientObservableSerializer (
     override val schemaForDocumentation: Schema
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
-    override fun readObject(obj: Any, schemas: SerializationSchemas, input: DeserializationInput): Observable<*> {
+    override fun readObject(obj: Any, schemas: SerializationSchemas, input: DeserializationInput,
+                            context: SerializationContext
+    ) : Observable<*> {
         val observableContext = context.properties[RpcClientObservableSerializer.RpcObservableContextKey]
                 as ObservableContext
 
@@ -85,7 +83,9 @@ class RpcClientObservableSerializer (
         return observableContext.callSiteMap?.get(rpcRequestOrObservableId)
     }
 
-    override fun writeDescribedObject(obj: Observable<*>, data: Data, type: Type, output: SerializationOutput) {
+    override fun writeDescribedObject(obj: Observable<*>, data: Data, type: Type, output: SerializationOutput,
+                                      context: SerializationContext
+    ) {
        throw NotSupportedException()
     }
 }
